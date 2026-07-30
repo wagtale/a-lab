@@ -1,6 +1,7 @@
 # This is a guide with just the commands to deploy Akvorado with no explaination. Read the akvorado-lab-guide first
 
 ```bash
+#update system and install docker
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
 
@@ -20,13 +21,14 @@ echo \
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-sudo usermod -aG docker akvorado
+sudo usermod -aG docker akvorado #akvorado is the username change to your username
 
 sudo systemctl enable docker
 sudo systemctl start docker
 
 docker run hello-world
 
+#install Stack
 mkdir ~/akvorado
 cd ~/akvorado
 
@@ -34,6 +36,8 @@ curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-co
 
 
 docker compose up -d
+
+docker compose down -v #removes all volumes
 
 visit
 http://<YOUR-VM-IP>:8081
@@ -52,20 +56,5 @@ metadata:
 
  core:
    default-sampling-rate: 1
-
-Need to ensure that the interface description on the router matches the regex in the outlet.yaml file. eg `transit : ISP`
-
-#SNMPv3
----
-metadata:
-  providers:
-    - type: snmp
-      credentials:
-        ::/0:
-          user-name: Username
-          authentication-protocol: SHA
-          authentication-passphrase: "pass"
-          privacy-protocol: AES
-          privacy-passphrase: "pass"
 ```
-
+Need to ensure that the interface description on the router matches the regex in the outlet.yaml file. eg `transit : ISP`

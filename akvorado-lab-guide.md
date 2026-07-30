@@ -365,8 +365,7 @@ cat docker-compose.yml
 > **Identify the following services in the compose file:**
 > - `akvorado` — the main application (inlet + orchestrator + console)
 > - `clickhouse` — the columnar database
-> - `kafka` or `redpanda` — the message queue between inlet and ClickHouse
-> - `zookeeper` — present if Kafka is used (not needed with Redpanda)
+> - `kafka`  — the message queue between inlet and ClickHouse
 
 ### Review the service relationships
 
@@ -377,7 +376,7 @@ flow packets
 akvorado inlet
     │  (writes enriched flows)
     ▼
-kafka / redpanda
+kafka 
     │  (consumed by)
     ▼
 akvorado orchestrator ──► clickhouse
@@ -402,7 +401,7 @@ find . -name "*.yaml" | grep -v docker-compose
 Open the config file in your editor of choice:
 
 ```bash
-nano akvorado.yaml
+vi akvorado.yaml
 ```
 
 ### Add flow listeners
