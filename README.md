@@ -1,7 +1,7 @@
 # a-lab
 
 A self-contained lab for standing up [Akvorado](https://github.com/akvorado/akvorado)
-— an open-source NetFlow/sFlow/IPFIX collector — on a single VM with
+- an open-source NetFlow/sFlow/IPFIX collector - on a single VM with
 Docker, plus a set of scripts for enriching Akvorado's peer-traffic
 visibility using IRR data.
 
@@ -57,7 +57,7 @@ port requirements before you start.
 
 ## The scripts folder, briefly
 
-Akvorado only knows a flow's immediate Src/DstAS — it has no concept
+Akvorado only knows a flow's immediate Src/DstAS - it has no concept
 of "this peer plus everyone downstream of them." If you peer with a
 transit provider or an ISP, filtering on their bare ASN alone
 undercounts your actual traffic exchange with them.
@@ -72,7 +72,7 @@ troubleshooting.
 
 ## Contributing
 
-No formal process here — fork, branch, and open a PR. If you're
+No formal process here - fork, branch, and open a PR. If you're
 contributing a peer-list-shaped file (like a filled-in `peers.conf`),
 double check you're not accidentally committing your own network's
 real peer relationships; `peers.example.conf` and `.gitignore` exist

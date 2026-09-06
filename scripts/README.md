@@ -5,21 +5,21 @@ ready-to-paste [Akvorado](https://github.com/akvorado/akvorado) filter
 clause for it.
 
 Typical use: you peer with someone (say, AS37100) and want to graph
-total traffic to that peer *and all of its customers* — not just the
+total traffic to that peer *and all of its customers* - not just the
 peer's own ASN. Akvorado only knows a flow's immediate Src/DstAS, so it
 has no native concept of a "customer cone." This script builds one from
 your IRR data so you can filter/graph on it directly.
 
 ## How it works
 
-It speaks the raw IRRd whois protocol (`!i<object>`) directly — no
+It speaks the raw IRRd whois protocol (`!i<object>`) directly - no
 `bgpq4` dependency. For a given as-set it fetches the direct members,
 then recurses into any member that isn't a plain ASN.
 
 Recursion is done **client-side, across multiple registries**, trying
 each host in `--hosts` in order for every unresolved object. This
 matters because a single IRRd server's own built-in recursion only
-follows objects it has mirrored locally — if your as-set's tree crosses
+follows objects it has mirrored locally - if your as-set's tree crosses
 registries (e.g. a RADB-hosted object whose member is an AFRINIC-only
 nested set), single-host recursion silently stops there. This is the
 same problem `bgpq4 -S` solves for prefix-list generation; this script
@@ -33,7 +33,7 @@ independently of tree shape. On a large as-set (e.g. a national/pan-
 regional transit provider with dozens of downstream customer objects),
 this is the difference between single-digit seconds and 20+ minutes.
 
-Cycle protection is included — some IRR trees do reference back up
+Cycle protection is included - some IRR trees do reference back up
 through themselves.
 
 ## Requirements
@@ -70,8 +70,8 @@ DstAS IN (2484, 2485, 2486)
 The `# ...` line goes to stderr (a summary, safe to ignore/log); the
 filter clause on stdout is what you paste into Akvorado.
 
-With `--verbose`, every query is also logged to stderr as it happens —
-depth, object name, host, hit/miss, and timing — so you can see
+With `--verbose`, every query is also logged to stderr as it happens -
+depth, object name, host, hit/miss, and timing - so you can see
 progress on a large tree instead of wondering if it's stuck:
 
 ```
@@ -89,26 +89,26 @@ progress on a large tree instead of wondering if it's stuck:
 | `--field`      | `DstAS`                                            | Akvorado field to filter on                    |
 | `--both`       | off                                                 | Emit `(SrcAS IN (...) OR DstAS IN (...))` instead of a single field |
 | `--max-depth`  | `12`                                                | Max recursion depth before giving up on a branch |
-| `-w, --workers`| `8`                                                 | Max concurrent whois connections. Higher is faster on a large/bushy tree but more load on the remote registries — see [Concurrency & reliability](#concurrency--reliability) below before cranking this up |
+| `-w, --workers`| `8`                                                 | Max concurrent whois connections. Higher is faster on a large/bushy tree but more load on the remote registries - see [Concurrency & reliability](#concurrency--reliability) below before cranking this up |
 | `-v, --verbose`| off                                                 | Print every query as it happens (depth, object, host, hit/miss, timing) |
 
 ## Concurrency & reliability
 
-Public whois servers — RADB in particular — will reset connections
+Public whois servers - RADB in particular - will reset connections
 under load rather than queue them if too many open at once from the
 same source. On a large tree with `--workers` set high, this shows up
 as `ConnectionResetError` on individual queries. The script handles
 this automatically:
 
 1. A reset on one host **fails over immediately** to the next host in
-   `--hosts` for that same object — no data is lost as long as at
+   `--hosts` for that same object - no data is lost as long as at
    least one host in the list can serve it.
 2. If **every** host resets/errors for an object in a single pass, the
    whole host list is **retried with exponential backoff + jitter**
    (up to 3 total attempts) before giving up on that branch.
 
 If you see many `connection reset` lines in `--verbose` output, that's
-normal under moderate-to-high `--workers` against RADB specifically —
+normal under moderate-to-high `--workers` against RADB specifically -
 the retry/failover logic is designed for exactly this and shouldn't
 cost you any ASNs in the final result. If you want to avoid triggering
 it in the first place, lower `-w` (e.g. to 4).
@@ -118,7 +118,7 @@ it in the first place, lower `-w` (e.g. to 4).
 Paste the printed clause directly into the filter box on the Visualize
 page for one-off use. To make it persist as a one-click option instead
 of re-pasting each time, add it under `database.saved-filters` in
-**`console.yaml`** — that's the console service's own config file, and
+**`console.yaml`** - that's the console service's own config file, and
 it ships with example entries already in this exact spot (Akvorado's
 default config includes sample filters like "From Netflix" / "From
 GAFAM" there). Drop the generated entries in alongside (or in place
@@ -131,7 +131,7 @@ database:
       content: "(SrcAS IN (...) OR DstAS IN (...))"
 ```
  
-`gen_peer_cone_filters.sh`'s output is already in this exact format —
+`gen_peer_cone_filters.sh`'s output is already in this exact format -
 paste the whole `database:` block it produces straight in, or merge
 just the `saved-filters` list if `console.yaml` already has other keys
 under `database:`. Restart the console service to pick up the change:
@@ -143,13 +143,13 @@ docker compose restart akvorado-console
 
 ## Limitations
 
-- Reflects what's **registered**, not live BGP reality — a customer
+- Reflects what's **registered**, not live BGP reality - a customer
   added to the peer's IRR object yesterday may take time to show up
   here, and stale entries persist until someone cleans them up.
 - `--max-depth` (default 12) caps how deep recursion goes; a branch
   that exceeds it prints a warning and stops there rather than
   continuing indefinitely.
-- No caching between runs — every invocation re-resolves the whole
+- No caching between runs - every invocation re-resolves the whole
   tree from scratch. For a peer whose cone changes slowly, consider
   re-running on a schedule (e.g. weekly cron) and diffing the output
   rather than re-running before every use.

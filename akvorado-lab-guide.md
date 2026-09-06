@@ -73,7 +73,7 @@ A **flow** is a summary of network traffic between two endpoints. Rather than ca
 | Interface (in/out) | ether1 |
 | Timestamp | 2024-03-15 10:23:01 |
 
-This makes flow data extremely useful for traffic analysis, capacity planning, and security investigation — at a fraction of the storage cost of packet capture.
+This makes flow data extremely useful for traffic analysis, capacity planning, and security investigation - at a fraction of the storage cost of packet capture.
 
 ---
 
@@ -85,19 +85,19 @@ This makes flow data extremely useful for traffic analysis, capacity planning, a
 |---|---|
 | v5 | Oldest, fixed record format, IPv4 only. Still widely supported. |
 | v9 | Template-based, supports IPv6, MPLS, BGP fields. Flexible. |
-| IPFIX | "NetFlow v10" — the IETF standard. Most extensible. |
+| IPFIX | "NetFlow v10" - the IETF standard. Most extensible. |
 
 **How it works:**
 
 1. The router identifies a new flow on a monitored interface.
 2. It tracks the flow in a local flow cache.
 3. When the flow ends (TCP FIN/RST) or a timeout expires, the record is exported to the configured **collector** (your Akvorado VM).
-4. Records are sent over **UDP** (connectionless — if a packet is dropped, the record is lost).
+4. Records are sent over **UDP** (connectionless - if a packet is dropped, the record is lost).
 
 **Key timers to be aware of:**
 
-- **Active timeout** — exports a record for long-lived flows that haven't ended (e.g. every 60 seconds).
-- **Inactive timeout** — exports a record when a flow has been idle (e.g. for 15 seconds).
+- **Active timeout** - exports a record for long-lived flows that haven't ended (e.g. every 60 seconds).
+- **Inactive timeout** - exports a record when a flow has been idle (e.g. for 15 seconds).
 
 **MikroTik** implements NetFlow v5 and v9 via its Traffic Flow feature. We will use **v9** in this lab as it supports more fields and IPv6.
 
@@ -119,7 +119,7 @@ This makes flow data extremely useful for traffic analysis, capacity planning, a
 |---|---|---|
 | Method | Flow cache tracking | Packet sampling |
 | Accuracy | Exact (for tracked flows) | Statistical (sampled) |
-| Hardware requirement | Needs flow cache in software/ASIC | Very low — samples handled in ASIC |
+| Hardware requirement | Needs flow cache in software/ASIC | Very low - samples handled in ASIC |
 | High-speed suitability | Can struggle at very high rates | Designed for high-speed interfaces |
 | Header depth | Flow metadata only | Can include packet header payload |
 
@@ -133,13 +133,13 @@ Sample rate is one of the most important tuning decisions when deploying sFlow, 
 
 #### What the sample rate number actually means
 
-A sample rate of **1:1024** means the hardware forwards one packet out of every 1024 to the sFlow agent for export. It does **not** mean every 1024th packet in sequence — the selection is random, which is important for statistical validity.
+A sample rate of **1:1024** means the hardware forwards one packet out of every 1024 to the sFlow agent for export. It does **not** mean every 1024th packet in sequence - the selection is random, which is important for statistical validity.
 
 The collector receives these samples and multiplies the observed traffic by the sample rate to estimate total volume. If a sampled packet shows 1,500 bytes and the sample rate is 1:1024, that one sample represents approximately **1.5 MB** of traffic on the wire.
 
 #### Impact on the router / switch
 
-The key point with sFlow is that the sampling itself happens in the **ASIC forwarding plane** — the hardware does the heavy lifting, not the CPU. This is why sFlow scales to 100G interfaces without breaking a sweat. However, the process of **encapsulating and exporting** the sample datagrams does involve the control plane to some degree:
+The key point with sFlow is that the sampling itself happens in the **ASIC forwarding plane** - the hardware does the heavy lifting, not the CPU. This is why sFlow scales to 100G interfaces without breaking a sweat. However, the process of **encapsulating and exporting** the sample datagrams does involve the control plane to some degree:
 
 | Sample Rate | Packets/sec at 1Gbps (avg 500B pkt) | Exported sFlow datagrams/sec |
 |---|---|---|
@@ -148,14 +148,14 @@ The key point with sFlow is that the sampling itself happens in the **ASIC forwa
 | 1:1024 | ~250,000 pkt/s | ~245 datagrams/s |
 | 1:4096 | ~250,000 pkt/s | ~61 datagrams/s |
 
-> The line rate stays the same — only the number of exported samples changes. A low sample rate (e.g. 1:64) at high traffic volumes can generate enough export datagrams to stress the management plane. On most modern hardware 1:512 to 1:1024 is a safe starting range for a 1G interface.
+> The line rate stays the same - only the number of exported samples changes. A low sample rate (e.g. 1:64) at high traffic volumes can generate enough export datagrams to stress the management plane. On most modern hardware 1:512 to 1:1024 is a safe starting range for a 1G interface.
 
 #### Impact on the collector (Akvorado + Kafka)
 
 Every sFlow datagram received by Akvorado's inlet is parsed, enriched (SNMP lookup, GeoIP, AS lookup), and pushed onto the Kafka/Redpanda queue. The collector CPU cost scales linearly with the number of datagrams per second, not with the underlying line rate.
 
-- **Low sample rate (e.g. 1:64)** — high datagram rate, high CPU and memory pressure on the collector, more enrichment lookups per second.
-- **High sample rate (e.g. 1:4096)** — low datagram rate, very low collector load, but coarser traffic visibility (small flows may be missed entirely).
+- **Low sample rate (e.g. 1:64)** - high datagram rate, high CPU and memory pressure on the collector, more enrichment lookups per second.
+- **High sample rate (e.g. 1:4096)** - low datagram rate, very low collector load, but coarser traffic visibility (small flows may be missed entirely).
 
 For a lab environment with light traffic, a sample rate of **1:256 or 1:512** will give you enough data to see meaningful results quickly without overwhelming anything.
 
@@ -180,7 +180,7 @@ For example, at 50,000 packets/second average across all interfaces with a 1:102
 
 ClickHouse typically stores flow rows at **50–150 bytes per row** after compression depending on field cardinality, so 4.2M rows/day ≈ **200–600 MB/day**. Easily manageable. At 1:64 that becomes 3–10 GB/day from the same traffic volume.
 
-#### Choosing a sample rate — summary
+#### Choosing a sample rate: summary
 
 | Scenario | Suggested Rate | Rationale |
 |---|---|---|
@@ -354,7 +354,7 @@ ls -lh
 
 Take a moment to look at the files before starting anything. You should see at minimum:
 
-- `docker-compose.yml` — defines all the services
+- `docker-compose.yml` - defines all the services
 - One or more `.yaml` config files for Akvorado itself (e.g. `akvorado.yaml` or files in a `config/` subdirectory)
 
 ```bash
@@ -363,9 +363,9 @@ cat docker-compose.yml
 ```
 
 > **Identify the following services in the compose file:**
-> - `akvorado` — the main application (inlet + orchestrator + console)
-> - `clickhouse` — the columnar database
-> - `kafka`  — the message queue between inlet and ClickHouse
+> - `akvorado` - the main application (inlet + orchestrator + console)
+> - `clickhouse` - the columnar database
+> - `kafka`  - the message queue between inlet and ClickHouse
 
 ### Review the service relationships
 
@@ -406,7 +406,7 @@ vi akvorado.yaml
 
 ### Add flow listeners
 
-Find the `inlet` section and confirm or add listeners for both NetFlow and sFlow. The example config may already have one or both — adjust the ports if needed:
+Find the `inlet` section and confirm or add listeners for both NetFlow and sFlow. The example config may already have one or both - adjust the ports if needed:
 
 ```yaml
 inlet:
@@ -435,10 +435,10 @@ inlet:
 
 ### Applying config changes without restarting the whole stack
 
-After editing any config file (e.g. `config/outlet.yaml`, `config/inlet.yaml`), you only need to restart the individual container whose config changed — not the entire stack. The config files are bind-mounted from the host into the containers, so Docker already has the updated file; the container just needs to re-read it on startup.
+After editing any config file (e.g. `config/outlet.yaml`, `config/inlet.yaml`), you only need to restart the individual container whose config changed - not the entire stack. The config files are bind-mounted from the host into the containers, so Docker already has the updated file; the container just needs to re-read it on startup.
 
 ```bash
-# Restart a single service — note the full service names as defined in docker-compose.yml
+# Restart a single service: note the full service names as defined in docker-compose.yml
 docker compose restart akvorado-outlet
 docker compose restart akvorado-inlet
 docker compose restart akvorado-orchestrator
@@ -491,7 +491,7 @@ Once all containers are healthy, open a browser and navigate to:
 http://<YOUR-VM-IP>:8081
 ```
 
-The UI will initially be empty — we need network devices to send flows before data appears.
+The UI will initially be empty - we need network devices to send flows before data appears.
 
 ---
 
@@ -536,16 +536,16 @@ add dst-address=<AKVORADO-VM-IP> port=2055 version=9
 > ```
 > These comments will appear as the interface description in Akvorado's flow records and dashboards.
 
-> **RouterOS v7 + NetFlow v9 — missing sampling rate:** MikroTik RouterOS v7 does not include the sampling rate in its NetFlow v9 export data. Without this, Akvorado cannot correctly scale traffic volumes and flow counts will appear orders of magnitude lower than reality. To fix this, explicitly tell Akvorado the sampling rate by adding the following to your `config/outlet.yaml` file:
+> **RouterOS v7 + NetFlow v9 - missing sampling rate:** MikroTik RouterOS v7 does not include the sampling rate in its NetFlow v9 export data. Without this, Akvorado cannot correctly scale traffic volumes and flow counts will appear orders of magnitude lower than reality. To fix this, explicitly tell Akvorado the sampling rate by adding the following to your `config/outlet.yaml` file:
 > ```yaml
 > core:
 >   default-sampling-rate: 1
 >
 > asn-providers:
-    - flow-except-default-route
-    - geo-ip
+>   - flow-except-default-route
+>   - geo-ip
 > ```
-> A value of `1` means every packet is being tracked (no sampling), which is correct for NetFlow — MikroTik's Traffic Flow records every flow, it simply omits the sampling rate field in the export. After saving the file, apply the change with:
+> A value of `1` means every packet is being tracked (no sampling), which is correct for NetFlow - MikroTik's Traffic Flow records every flow, it simply omits the sampling rate field in the export. After saving the file, apply the change with:
 > ```bash
 > docker compose restart akvorado-outlet
 > ```
@@ -767,7 +767,7 @@ docker compose up -d
 
 Use this procedure to completely remove the Akvorado stack, all collected data, and optionally Docker itself from the VM. This is useful at the end of a lab session or before a clean reinstall.
 
-### Step 1 — Stop and remove all containers, networks, and volumes
+### Step 1: Stop and remove all containers, networks, and volumes
 
 This removes all running containers, the networks Docker Compose created, and the named volumes where ClickHouse stores its data.
 
@@ -778,14 +778,14 @@ docker compose down -v
 
 > The `-v` flag is what removes the data volumes. Without it, containers are stopped and removed but the ClickHouse data persists on disk.
 
-### Step 2 — Remove the working directory
+### Step 2: Remove the working directory
 
 ```bash
 cd ~
 rm -rf ~/akvorado
 ```
 
-### Step 3 — Remove unused Docker images
+### Step 3: Remove unused Docker images
 
 The above steps remove containers and volumes but leave the downloaded images cached on disk. To free that space:
 
@@ -805,7 +805,7 @@ docker system prune -a --volumes
 
 > **Warning:** `docker system prune -a --volumes` removes **all** Docker data on the VM, not just Akvorado's. If other Docker projects are running on the same VM, omit this step and use the targeted commands above instead.
 
-### Step 4 (optional) — Remove Docker entirely
+### Step 4 (optional): Remove Docker entirely
 
 Only do this if you want to return the VM to a completely clean state with no Docker installation.
 
@@ -850,12 +850,12 @@ docker version
 
 ## Appendix B: Securing the Installation (HTTPS + Basic Auth)
 
-The default Akvorado quickstart stack runs over plain HTTP on port 8081 with no authentication — fine for a lab on a trusted network, but not suitable for any internet-facing or production deployment. This appendix documents how to add:
+The default Akvorado quickstart stack runs over plain HTTP on port 8081 with no authentication - fine for a lab on a trusted network, but not suitable for any internet-facing or production deployment. This appendix documents how to add:
 
-- **TLS via Let's Encrypt** — automatic certificate issuance and renewal using the ACME HTTP challenge
-- **Basic authentication** — a username and password protecting the console
+- **TLS via Let's Encrypt** - automatic certificate issuance and renewal using the ACME HTTP challenge
+- **Basic authentication** - a username and password protecting the console
 
-The stack already includes **Traefik** as a reverse proxy in front of all Akvorado services. All the changes below are made to Traefik's configuration inside `docker-compose.yml` — no changes to the Akvorado containers themselves are needed.
+The stack already includes **Traefik** as a reverse proxy in front of all Akvorado services. All the changes below are made to Traefik's configuration inside `docker-compose.yml` - no changes to the Akvorado containers themselves are needed.
 
 > **Prerequisites:**
 > - Your VM must have a **public DNS A record** pointing to its IP address (e.g. `flows.example.com → 1.2.3.4`). Let's Encrypt needs to reach your VM over HTTP on port 80 to complete the challenge.
@@ -878,7 +878,7 @@ Comparing the default compose file to the secured version, there are four areas 
 
 ---
 
-### Step 1 — Add the Let's Encrypt volume
+### Step 1: Add the Let's Encrypt volume
 
 Open your `docker-compose.yml` and add the new volume under the `volumes:` section at the top of the file:
 
@@ -896,7 +896,7 @@ This volume persists the issued certificate across container restarts. Without i
 
 ---
 
-### Step 2 — Generate a bcrypt password hash
+### Step 2: Generate a bcrypt password hash
 
 Basic auth in Traefik requires passwords stored as bcrypt hashes. Generate one on your VM:
 
@@ -915,60 +915,60 @@ This will output something like:
 flows:$2y$05$LbR0WmEdIsh0Z8Mv2o2p1uGLN3ZViZV7b3NWAPnx/7zuaDgPP5V/2
 ```
 
-Copy this output — you will need it in the next step.
+Copy this output - you will need it in the next step.
 
 > **Important:** When pasting the hash into `docker-compose.yml`, every `$` sign must be escaped as `$$`. For example:
 > `flows:$2y$05$abc...` becomes `flows:$$2y$$05$$abc...`
 >
-> This is a Docker Compose requirement — `$` is used for variable interpolation, so it must be doubled to be treated as a literal character.
+> This is a Docker Compose requirement - `$` is used for variable interpolation, so it must be doubled to be treated as a literal character.
 
 ---
 
-### Step 3 — Update the Traefik service
+### Step 3: Update the Traefik service
 
 Rather than replacing the entire `traefik:` block, the changes below are broken into exactly what is being added or modified. Lines marked `# ✚ ADD` are new; lines marked `# ✎ CHANGE` replace an existing line.
 
-**In the `environment:` section — add these lines:**
+**In the `environment:` section - add these lines:**
 
 ```yaml
-      # ✚ ADD — change the public entrypoint to redirect to HTTPS instead of serving directly
+      # ✚ ADD - change the public entrypoint to redirect to HTTPS instead of serving directly
       TRAEFIK_ENTRYPOINTS_public_HTTP_MIDDLEWARES: ""
       TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_TO: websecure
       TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_SCHEME: https
 
-      # ✚ ADD — new HTTPS entrypoint with basic auth middleware applied
+      # ✚ ADD - new HTTPS entrypoint with basic auth middleware applied
       TRAEFIK_ENTRYPOINTS_websecure_ADDRESS: ":8443"
       TRAEFIK_ENTRYPOINTS_websecure_HTTP_MIDDLEWARES: compress@docker,basic-auth@docker
 
-      # ✚ ADD — Let's Encrypt ACME configuration
+      # ✚ ADD - Let's Encrypt ACME configuration
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: "email@example.com"   # <-- your email
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_STORAGE: "/letsencrypt/acme.json"
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_HTTPCHALLENGE_ENTRYPOINT: "public"
 ```
 
-**In the `labels:` section — add this line** (alongside the existing label lines):
+**In the `labels:` section - add this line** (alongside the existing label lines):
 
 ```yaml
-      # ✚ ADD — basic auth middleware definition; paste your escaped bcrypt hash here
+      # ✚ ADD - basic auth middleware definition; paste your escaped bcrypt hash here
       - "traefik.http.middlewares.basic-auth.basicauth.users=flows:$$2y$$05$$your-hash-here"
 ```
 
-**In the `ports:` section — add these two lines** (the existing `8081:8081/tcp` line stays):
+**In the `ports:` section - add these two lines** (the existing `8081:8081/tcp` line stays):
 
 ```yaml
-      - 80:8081/tcp      # ✚ ADD — standard HTTP port, used for ACME challenge and redirect
-      - 443:8443/tcp     # ✚ ADD — standard HTTPS port
+      - 80:8081/tcp      # ✚ ADD - standard HTTP port, used for ACME challenge and redirect
+      - 443:8443/tcp     # ✚ ADD - standard HTTPS port
 ```
 
-**In the `volumes:` section — add this line:**
+**In the `volumes:` section - add this line:**
 
 ```yaml
-      - akvorado-letsencrypt:/letsencrypt   # ✚ ADD — persist Let's Encrypt certificates
+      - akvorado-letsencrypt:/letsencrypt   # ✚ ADD - persist Let's Encrypt certificates
 ```
 
 ---
 
-### Step 4 — Update the console service for HTTPS
+### Step 4: Update the console service for HTTPS
 
 Only the `labels:` block of `akvorado-console` needs to change. Add the four lines marked `# ✚ ADD` and replace the one line marked `# ✎ CHANGE`:
 
@@ -977,13 +977,13 @@ Only the `labels:` block of `akvorado-console` needs to change. Add the four lin
     # ... (all other settings unchanged) ...
     labels:
       - traefik.enable=true
-      # ✚ ADD — enable TLS on the console router
+      # ✚ ADD - enable TLS on the console router
       - traefik.http.routers.akvorado-console.tls=true
-      # ✚ ADD — use the Let's Encrypt cert resolver defined in the Traefik service
+      # ✚ ADD - use the Let's Encrypt cert resolver defined in the Traefik service
       - traefik.http.routers.akvorado-console.tls.certresolver=letsencrypt
-      # ✚ ADD — your public domain name (must match your DNS A record)
+      # ✚ ADD - your public domain name (must match your DNS A record)
       - traefik.http.routers.akvorado-console.tls.domains[0].main=flows.example.com
-      # ✎ CHANGE — was entrypoints=public, now serves over the HTTPS entrypoint
+      # ✎ CHANGE - was entrypoints=public, now serves over the HTTPS entrypoint
       - traefik.http.routers.akvorado-console.entrypoints=websecure
       # (all remaining existing labels stay exactly as they are)
       - traefik.http.routers.akvorado-console-debug.rule=PathPrefix(`/debug`)
@@ -1003,18 +1003,18 @@ Only the `labels:` block of `akvorado-console` needs to change. Add the four lin
       - metrics.path=/api/v0/metrics
 ```
 
-> **Note on the Remote-User headers:** Akvorado's console uses these headers to identify the logged-in user for display purposes. In a basic auth setup these are static values — change them to match the username you created in Step 2. For a more complete multi-user setup, an upstream identity provider (e.g. Authelia, Keycloak) would set these headers dynamically, but that is outside the scope of this lab.
+> **Note on the Remote-User headers:** Akvorado's console uses these headers to identify the logged-in user for display purposes. In a basic auth setup these are static values - change them to match the username you created in Step 2. For a more complete multi-user setup, an upstream identity provider (e.g. Authelia, Keycloak) would set these headers dynamically, but that is outside the scope of this lab.
 
 ---
 
-### Step 5 — Open firewall ports and apply the changes
+### Step 5: Open firewall ports and apply the changes
 
 ```bash
 # Open the standard HTTP and HTTPS ports
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
-# Apply the compose changes — recreate only the traefik and console containers
+# Apply the compose changes: recreate only the traefik and console containers
 cd ~/akvorado
 docker compose up -d --force-recreate traefik akvorado-console
 ```
@@ -1029,7 +1029,7 @@ Within a minute or two you should see log lines confirming the ACME challenge co
 
 ---
 
-### Step 6 — Verify
+### Step 6: Verify
 
 Open a browser and navigate to your domain:
 
@@ -1058,7 +1058,3 @@ echo | openssl s_client -connect flows.example.com:443 2>/dev/null | openssl x50
 | HTTP not redirecting | `public` entrypoint redirect not applied | Confirm `TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_*` vars are present |
 
 > **Let's Encrypt rate limits:** Let's Encrypt allows a maximum of 5 certificate requests per domain per week on the production endpoint. If you are testing repeatedly, use the staging endpoint first by adding `TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_CASERVER: "https://acme-staging-v02.api.letsencrypt.org/directory"` to Traefik's environment. Staging certificates are not trusted by browsers but confirm the ACME flow works before using a production certificate.
-
----
-
-*Document version: draft — commands to be verified against Akvorado release and RouterOS/EOS versions in use.*

@@ -1,7 +1,10 @@
-# This is a guide with just the commands to deploy Akvorado with no explaination. Read the akvorado-lab-guide first
+# Akvorado Quick-Deploy: Commands Only
+
+> For explanation of what each step does, see [`akvorado-lab-guide.md`](akvorado-lab-guide.md).
+
+## 1. Install Docker
 
 ```bash
-#update system and install docker
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
 
@@ -21,40 +24,59 @@ echo \
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-sudo usermod -aG docker akvorado #akvorado is the username change to your username
-
-sudo systemctl enable docker
-sudo systemctl start docker
+sudo usermod -aG docker $USER   # log out and back in after this
+sudo systemctl enable --now docker
 
 docker run hello-world
+```
 
-#install Stack
+## 2. Deploy the Stack
+
+```bash
 mkdir ~/akvorado
 cd ~/akvorado
 
 curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
 
-
 docker compose up -d
+```
 
-docker compose down -v #removes all volumes
+Open the UI at `http://<YOUR-VM-IP>:8081` once all containers are healthy.
 
-visit
-http://<YOUR-VM-IP>:8081
+## 3. Configure SNMP Enrichment (optional)
 
-edit outlet.yaml and set snmp
+Add to `outlet.yaml`:
 
----
+```yaml
 metadata:
   providers:
     - type: snmp
       credentials:
         ::/0:
           communities: public
-
-# add this if you are using mikrotik
-
- core:
-   default-sampling-rate: 1
 ```
-Need to ensure that the interface description on the router matches the regex in the outlet.yaml file. eg `transit : ISP`
+
+## 4. MikroTik / RouterOS v7: Fix Missing Sampling Rate
+
+RouterOS v7 does not include the sampling rate in its NetFlow v9 export.
+Add to `outlet.yaml`:
+
+```yaml
+core:
+  default-sampling-rate: 1
+```
+
+Then restart the outlet:
+
+```bash
+docker compose restart akvorado-outlet
+```
+
+> Ensure the interface description on the router matches the regex in `outlet.yaml`
+> (e.g. `transit : ISP`).
+
+## 5. Teardown
+
+```bash
+docker compose down -v   # stops everything and removes data volumes
+```

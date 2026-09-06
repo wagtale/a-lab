@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# Akvorado Lab — Docker Compose
+# Akvorado Lab: Docker Compose
 # =============================================================================
 # This compose file is pre-configured for the lab with:
 #   - All core Akvorado services (inlet, outlet, orchestrator, console)
@@ -10,7 +10,7 @@
 #   - Redis
 #   - Traefik reverse proxy with Let's Encrypt TLS and basic auth
 #
-# BEFORE STARTING — complete these steps:
+# BEFORE STARTING: complete these steps:
 #
 #   1. Set your domain name (search for: flows.example.com)
 #   2. Set your email address for Let's Encrypt (search for: email@example.com)
@@ -24,7 +24,7 @@
 # PORT SUMMARY:
 #   80   → HTTP (redirects to HTTPS)
 #   443  → HTTPS (Akvorado console, public)
-#   8080 → Private/internal services (loopback only — do not expose)
+#   8080 → Private/internal services (loopback only: do not expose)
 #   8081 → HTTP public entrypoint (redirect only)
 #   2055 → NetFlow v9 UDP (MikroTik)
 #   4739 → IPFIX UDP
@@ -54,7 +54,7 @@ volumes:
 services:
 
   # ---------------------------------------------------------------------------
-  # Kafka (KRaft mode — no Zookeeper required)
+  # Kafka (KRaft mode - no Zookeeper required)
   # ---------------------------------------------------------------------------
   kafka:
     extends:
@@ -85,7 +85,7 @@ services:
              "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   # ---------------------------------------------------------------------------
-  # Kafka UI — accessible at https://flows.example.com/kafka-ui (read-only)
+  # Kafka UI - accessible at https://flows.example.com/kafka-ui (read-only)
   # ---------------------------------------------------------------------------
   kafka-ui:
     extends:
@@ -104,7 +104,7 @@ services:
       - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
   # ---------------------------------------------------------------------------
-  # Redis — used by the console for session/cache storage
+  # Redis - used by the console for session/cache storage
   # ---------------------------------------------------------------------------
   redis:
     extends:
@@ -118,7 +118,7 @@ services:
         - "timeout 3 redis-cli ping | grep -q PONG"
 
   # ---------------------------------------------------------------------------
-  # Akvorado Orchestrator — coordinates all Akvorado components
+  # Akvorado Orchestrator - coordinates all Akvorado components
   # Reads from: ../config/akvorado.yaml (mounted read-only)
   # To apply config changes: docker compose restart akvorado-orchestrator
   # ---------------------------------------------------------------------------
@@ -146,7 +146,7 @@ services:
       - metrics.path=/api/v0/metrics
 
   # ---------------------------------------------------------------------------
-  # Akvorado Console — the web UI
+  # Akvorado Console - the web UI
   # Accessible at: https://flows.example.com  (after TLS is configured)
   # To apply config changes: docker compose restart akvorado-console
   #
@@ -201,11 +201,11 @@ services:
       - metrics.path=/api/v0/metrics
 
   # ---------------------------------------------------------------------------
-  # Akvorado Inlet — receives flow data from network devices
+  # Akvorado Inlet - receives flow data from network devices
   # Listens on:
-  #   UDP 2055 — NetFlow v9 (MikroTik)
-  #   UDP 4739 — IPFIX
-  #   UDP 6343 — sFlow (Arista)
+  #   UDP 2055 - NetFlow v9 (MikroTik)
+  #   UDP 4739 - IPFIX
+  #   UDP 6343 - sFlow (Arista)
   # To apply config changes: docker compose restart akvorado-inlet
   # ---------------------------------------------------------------------------
   akvorado-inlet:
@@ -238,7 +238,7 @@ services:
       - metrics.path=/api/v0/metrics
 
   # ---------------------------------------------------------------------------
-  # Akvorado Outlet — exports enriched flow data (e.g. to external consumers)
+  # Akvorado Outlet - exports enriched flow data (e.g. to external consumers)
   # To apply config changes: docker compose restart akvorado-outlet
   #
   # NOTE: If using MikroTik ROS7 with NetFlow v9, add the following to
@@ -281,7 +281,7 @@ services:
       - metrics.path=/api/v0/metrics
 
   # ---------------------------------------------------------------------------
-  # ClickHouse — columnar database for flow storage
+  # ClickHouse - columnar database for flow storage
   # ---------------------------------------------------------------------------
   clickhouse:
     extends:
@@ -311,12 +311,12 @@ services:
       - metrics.port=8123
 
   # ---------------------------------------------------------------------------
-  # Traefik — reverse proxy, TLS termination, and basic auth
+  # Traefik - reverse proxy, TLS termination, and basic auth
   #
   # Entrypoints:
-  #   private  :8080 — internal services only, bound to loopback (127.0.0.1)
-  #   public   :8081 — HTTP, redirects all traffic to HTTPS
-  #   websecure:8443 — HTTPS with basic auth, mapped to external port 443
+  #   private  :8080 - internal services only, bound to loopback (127.0.0.1)
+  #   public   :8081 - HTTP, redirects all traffic to HTTPS
+  #   websecure:8443 - HTTPS with basic auth, mapped to external port 443
   #
   # TO SET UP BASIC AUTH:
   #   1. Run: htpasswd -nbB flows yourpassword
@@ -336,18 +336,18 @@ services:
       TRAEFIK_METRICS_PROMETHEUS_ADDROUTERSLABELS: "true"
       TRAEFIK_PROVIDERS_DOCKER: "true"
       TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT: "false"
-      # Private entrypoint — loopback only, no auth, used for internal API access
+      # Private entrypoint - loopback only, no auth, used for internal API access
       TRAEFIK_ENTRYPOINTS_private_ADDRESS: ":8080"
       TRAEFIK_ENTRYPOINTS_private_HTTP_MIDDLEWARES: compress@docker
-      # Public HTTP entrypoint — redirects all traffic to HTTPS
+      # Public HTTP entrypoint - redirects all traffic to HTTPS
       TRAEFIK_ENTRYPOINTS_public_ADDRESS: ":8081"
       TRAEFIK_ENTRYPOINTS_public_HTTP_MIDDLEWARES: ""
       TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_TO: websecure
       TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_SCHEME: https
-      # Public HTTPS entrypoint — basic auth applied to all routes here
+      # Public HTTPS entrypoint - basic auth applied to all routes here
       TRAEFIK_ENTRYPOINTS_websecure_ADDRESS: ":8443"
       TRAEFIK_ENTRYPOINTS_websecure_HTTP_MIDDLEWARES: compress@docker,basic-auth@docker
-      # Let's Encrypt ACME — uses HTTP challenge on the public entrypoint
+      # Let's Encrypt ACME - uses HTTP challenge on the public entrypoint
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: "email@example.com"   # <-- YOUR EMAIL
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_STORAGE: "/letsencrypt/acme.json"
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_HTTPCHALLENGE_ENTRYPOINT: "public"
@@ -382,11 +382,11 @@ services:
     expose:
       - 8080/tcp
     ports:
-      # 8080 is private — bound to loopback only, never expose externally
+      # 8080 is private - bound to loopback only, never expose externally
       - 127.0.0.1:8080:8080/tcp
-      # 8081 is the public HTTP entrypoint — redirects to HTTPS
+      # 8081 is the public HTTP entrypoint - redirects to HTTPS
       - 8081:8081/tcp
-      # Standard ports — 80 for ACME challenge and redirect, 443 for HTTPS
+      # Standard ports - 80 for ACME challenge and redirect, 443 for HTTPS
       - 80:8081/tcp
       - 443:8443/tcp
     volumes:

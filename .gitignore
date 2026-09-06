@@ -2,3 +2,5 @@
 # not meant to be committed or shared. Copy peers.example.conf to
 # peers.conf and edit that instead.
 scripts/peers.conf
+.DS_Store
+~$*
