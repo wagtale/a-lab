@@ -1,0 +1,4 @@
+# Local peer config - contains your own network's real peer list,
+# not meant to be committed or shared. Copy peers.example.conf to
+# peers.conf and edit that instead.
+scripts/peers.conf
