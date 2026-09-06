@@ -25,13 +25,21 @@ nested set), single-host recursion silently stops there. This is the
 same problem `bgpq4 -S` solves for prefix-list generation; this script
 does the equivalent for a flat ASN list.
 
+Resolution is **concurrent**: one thread is spawned per nested object
+rather than drawn from a fixed-size pool, so a wide/deep tree doesn't
+deadlock waiting on itself. Actual network I/O is throttled separately
+via `--workers`, so you control load on the remote registries
+independently of tree shape. On a large as-set (e.g. a national/pan-
+regional transit provider with dozens of downstream customer objects),
+this is the difference between single-digit seconds and 20+ minutes.
+
 Cycle protection is included — some IRR trees do reference back up
 through themselves.
 
 ## Requirements
 
-Python 3.10+, standard library only (`socket`, `argparse`, `re`). No
-`pip install` needed.
+Python 3.10+, standard library only (`socket`, `argparse`, `re`,
+`threading`). No `pip install` needed.
 
 ## Usage
 
@@ -47,26 +55,63 @@ Python 3.10+, standard library only (`socket`, `argparse`, `re`). No
 
 # Add more registries to the fallback chain, e.g. if a nested set lives in RIPE
 ./cone_query.py --hosts whois.radb.net,whois.afrinic.net,whois.ripe.net,rr.ntt.net AS37271:AS-PEERS:AS37100
+
+# Watch it work on a large tree, with up to 16 concurrent whois connections
+./cone_query.py --verbose --workers 16 AS-SET-SEACOM
 ```
 
 Output:
 
 ```
-# 3 ASNs in AS37271:AS-PEERS:AS2484 (across whois.radb.net, whois.afrinic.net, rr.ntt.net)
+# 3 ASNs in AS37271:AS-PEERS:AS2484 (across whois.radb.net, whois.afrinic.net, rr.ntt.net, 4 queries, 0.9s, workers=8)
 DstAS IN (2484, 2485, 2486)
 ```
 
 The `# ...` line goes to stderr (a summary, safe to ignore/log); the
 filter clause on stdout is what you paste into Akvorado.
 
+With `--verbose`, every query is also logged to stderr as it happens —
+depth, object name, host, hit/miss, and timing — so you can see
+progress on a large tree instead of wondering if it's stuck:
+
+```
+[#0001 d0] AS-SET-SEACOM @ whois.radb.net: 497 members (0.58s)
+  -> AS-SET-SEACOM (whois.radb.net) has 135 nested object(s), spawning threads
+  [#0011 d1] AS-327885 @ whois.radb.net: 5 members (0.57s)
+```
+
 ## Options
 
-| Flag       | Default                                          | Description                                    |
-|------------|---------------------------------------------------|-------------------------------------------------|
-| `--hosts`  | `whois.radb.net,whois.afrinic.net,rr.ntt.net`     | IRRd hosts to try, in order, per unresolved object |
-| `--port`   | `43`                                               | IRRd whois port                                |
-| `--field`  | `DstAS`                                            | Akvorado field to filter on                    |
-| `--both`   | off                                                 | Emit `(SrcAS IN (...) OR DstAS IN (...))` instead of a single field |
+| Flag           | Default                                          | Description                                    |
+|----------------|---------------------------------------------------|-------------------------------------------------|
+| `--hosts`      | `whois.radb.net,whois.afrinic.net,rr.ntt.net`     | IRRd hosts to try, in order, per unresolved object |
+| `--port`       | `43`                                               | IRRd whois port                                |
+| `--field`      | `DstAS`                                            | Akvorado field to filter on                    |
+| `--both`       | off                                                 | Emit `(SrcAS IN (...) OR DstAS IN (...))` instead of a single field |
+| `--max-depth`  | `12`                                                | Max recursion depth before giving up on a branch |
+| `-w, --workers`| `8`                                                 | Max concurrent whois connections. Higher is faster on a large/bushy tree but more load on the remote registries — see [Concurrency & reliability](#concurrency--reliability) below before cranking this up |
+| `-v, --verbose`| off                                                 | Print every query as it happens (depth, object, host, hit/miss, timing) |
+
+## Concurrency & reliability
+
+Public whois servers — RADB in particular — will reset connections
+under load rather than queue them if too many open at once from the
+same source. On a large tree with `--workers` set high, this shows up
+as `ConnectionResetError` on individual queries. The script handles
+this automatically:
+
+1. A reset on one host **fails over immediately** to the next host in
+   `--hosts` for that same object — no data is lost as long as at
+   least one host in the list can serve it.
+2. If **every** host resets/errors for an object in a single pass, the
+   whole host list is **retried with exponential backoff + jitter**
+   (up to 3 total attempts) before giving up on that branch.
+
+If you see many `connection reset` lines in `--verbose` output, that's
+normal under moderate-to-high `--workers` against RADB specifically —
+the retry/failover logic is designed for exactly this and shouldn't
+cost you any ASNs in the final result. If you want to avoid triggering
+it in the first place, lower `-w` (e.g. to 4).
 
 ## Using the output in Akvorado
 
@@ -80,10 +125,10 @@ under `database.saved-filters` in the Akvorado config).
 - Reflects what's **registered**, not live BGP reality — a customer
   added to the peer's IRR object yesterday may take time to show up
   here, and stale entries persist until someone cleans them up.
-- Sequential, one TCP connection per object — fine for typical as-set
-  sizes, but a very large/deep tree will take noticeably longer since
-  connections aren't pipelined or reused.
-- Default recursion depth is 12; deeper trees print a warning and stop
-  (`--hosts` won't help here — this would need a code change to raise
-  `max_depth` in `resolve_cone()`).
-
+- `--max-depth` (default 12) caps how deep recursion goes; a branch
+  that exceeds it prints a warning and stops there rather than
+  continuing indefinitely.
+- No caching between runs — every invocation re-resolves the whole
+  tree from scratch. For a peer whose cone changes slowly, consider
+  re-running on a schedule (e.g. weekly cron) and diffing the output
+  rather than re-running before every use.
