@@ -114,11 +114,32 @@ cost you any ASNs in the final result. If you want to avoid triggering
 it in the first place, lower `-w` (e.g. to 4).
 
 ## Using the output in Akvorado
-
+ 
 Paste the printed clause directly into the filter box on the Visualize
-page. If you want it to persist as a one-click option rather than
-re-pasting each time, save it as a named filter from the UI (or add it
-under `database.saved-filters` in the Akvorado config).
+page for one-off use. To make it persist as a one-click option instead
+of re-pasting each time, add it under `database.saved-filters` in
+**`console.yaml`** — that's the console service's own config file, and
+it ships with example entries already in this exact spot (Akvorado's
+default config includes sample filters like "From Netflix" / "From
+GAFAM" there). Drop the generated entries in alongside (or in place
+of) the examples:
+ 
+```yaml
+database:
+  saved-filters:
+    - description: "Peer cone: seacom (AS-SET-SEACOM)"
+      content: "(SrcAS IN (...) OR DstAS IN (...))"
+```
+ 
+`gen_peer_cone_filters.sh`'s output is already in this exact format —
+paste the whole `database:` block it produces straight in, or merge
+just the `saved-filters` list if `console.yaml` already has other keys
+under `database:`. Restart the console service to pick up the change:
+ 
+```bash
+docker compose restart akvorado-console
+```
+
 
 ## Limitations
 
